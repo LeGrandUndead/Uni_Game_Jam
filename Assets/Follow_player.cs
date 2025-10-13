@@ -4,90 +4,51 @@ using UnityEngine;
 
 public class Follow_player : MonoBehaviour
 {
-    [Header("References")]
     public Transform player;
-
-    [Header("Camera Settings")]
-    public Vector3 offset = new Vector3(2f, 3f, -4f); // over-the-shoulder position
+    public Vector3 offset = new Vector3(2f, 3f, -5f);
+    public Vector3 runOffset = new Vector3(0f, 0f, -1.5f);
     public float smoothSpeed = 10f;
     public float rotationSpeed = 5f;
-
-    [Header("Distance Settings")]
-    public float minDistance = 1.5f;   // Prevents camera being too close to player
-    public float maxDistance = 6f;     // Maximum allowed distance (when zooming out from collision)
-    public float collisionBuffer = 0.2f; // How far from obstacles camera stops
-
-    [HideInInspector] public bool isDashing = false;
+    public bool changeFOV = true;
+    public float normalFOV = 60f;
+    public float runFOV = 75f;
+    public float fovLerpSpeed = 5f;
+    public LayerMask collisionLayers;
 
     private float yaw = 0f;
-    private float pitch = 10f;
-    private float currentDistance;
-    private Vector3 desiredPosition;
-
-    [Header("Collision Settings")]
-    public LayerMask collisionMask; // Assign to everything except Player layer in Inspector
-
-    void Start()
-    {
-        currentDistance = offset.magnitude;
-    }
+    private float pitch = 5f;
 
     void LateUpdate()
     {
-        if (!player) return;
+        if (player == null) return;
 
-        HandleCameraInput();
-        FollowPlayer();
-    }
-
-    void HandleCameraInput()
-    {
-        // Mouse input
         yaw += Input.GetAxis("Mouse X") * rotationSpeed;
         pitch -= Input.GetAxis("Mouse Y") * rotationSpeed;
 
-        // Arrow key input
-        if (Input.GetKey(KeyCode.LeftArrow)) yaw -= rotationSpeed * Time.deltaTime * 30f;
-        if (Input.GetKey(KeyCode.RightArrow)) yaw += rotationSpeed * Time.deltaTime * 30f;
-        if (Input.GetKey(KeyCode.UpArrow)) pitch += rotationSpeed * Time.deltaTime * 30f;
-        if (Input.GetKey(KeyCode.DownArrow)) pitch -= rotationSpeed * Time.deltaTime * 30f;
-
-        pitch = Mathf.Clamp(pitch, -15f, 25f);
-    }
-
-    void FollowPlayer()
-    {
+        pitch = Mathf.Clamp(pitch, -20f, 20f);
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
 
-        // Desired camera position (before collision adjustments)
-        Vector3 targetPos = player.position + rotation * offset;
-        Vector3 direction = (targetPos - player.position).normalized;
+        Vector3 currentOffset = offset;
+        Movement playerMovement = player.GetComponent<Movement>();
+        if (playerMovement != null && playerMovement.isRunning)
+            currentOffset += runOffset;
 
-        float targetDistance = offset.magnitude;
-        float finalDistance = targetDistance;
+        Vector3 desiredPosition = player.position + rotation * currentOffset;
 
-        // Raycast to detect obstacles between player and camera
-        if (Physics.Raycast(player.position + Vector3.up * 0.8f, direction, out RaycastHit hit, targetDistance, collisionMask))
-        {
-            finalDistance = Mathf.Clamp(hit.distance - collisionBuffer, minDistance, maxDistance);
-        }
+        Vector3 dir = desiredPosition - player.position;
+        float dist = dir.magnitude;
+        RaycastHit hit;
 
-        desiredPosition = player.position + rotation * (offset.normalized * finalDistance);
+        if (Physics.SphereCast(player.position, 0.3f, dir.normalized, out hit, dist, collisionLayers))
+            desiredPosition = hit.point - dir.normalized * 0.3f;
 
-        // Apply smoothing
-        float effectiveSmooth = isDashing ? smoothSpeed * 0.5f : smoothSpeed;
-        transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * effectiveSmooth);
-
-        // Look slightly above player's center
+        transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
         transform.LookAt(player.position + Vector3.up * 0.8f);
-    }
 
-    void OnDrawGizmosSelected()
-    {
-        if (player)
+        if (changeFOV && Camera.main != null && playerMovement != null)
         {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawLine(player.position + Vector3.up * 0.8f, transform.position);
+            float targetFOV = playerMovement.isRunning ? runFOV : normalFOV;
+            Camera.main.fieldOfView = Mathf.Lerp(Camera.main.fieldOfView, targetFOV, Time.deltaTime * fovLerpSpeed);
         }
     }
 }

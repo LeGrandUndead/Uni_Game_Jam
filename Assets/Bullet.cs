@@ -10,6 +10,14 @@ public class Bullet : MonoBehaviour
     public float damage = 10f;
     public float knockbackForce = 5f;
 
+    [Header("Homing Settings")]
+    public bool enableHoming = true;       
+    public float detectionRadius = 10f;    
+    public float rotationSpeed = 10f;      
+    public string enemyTag = "Enemy";      
+
+    private Transform target;
+
     void Start()
     {
         Destroy(gameObject, lifeTime);
@@ -17,26 +25,58 @@ public class Bullet : MonoBehaviour
 
     void Update()
     {
-        // Move straight forward every frame
+        if (enableHoming)
+        {
+            if (target == null)
+                FindClosestEnemy();
+
+            if (target != null)
+                RotateTowardTarget();
+        }
+
         transform.Translate(Vector3.forward * speed * Time.deltaTime);
+    }
+
+    void FindClosestEnemy()
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius);
+        float closestDist = Mathf.Infinity;
+        Transform closest = null;
+
+        foreach (Collider hit in hits)
+        {
+            if (hit.CompareTag(enemyTag))
+            {
+                float dist = Vector3.Distance(transform.position, hit.transform.position);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = hit.transform;
+                }
+            }
+        }
+
+        if (closest != null)
+            target = closest;
+    }
+
+    void RotateTowardTarget()
+    {
+        Vector3 direction = (target.position - transform.position).normalized;
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
     }
 
     void OnTriggerEnter(Collider other)
     {
-        // Ignore the player
         if (other.CompareTag("Player")) return;
 
-        // If it hits an enemy
-        if (other.CompareTag("Enemy"))
+        if (other.CompareTag(enemyTag))
         {
-            // --- Deal Damage ---
             systeme_sante health = other.GetComponent<systeme_sante>();
             if (health != null)
-            {
                 health.TakeDamage(damage);
-            }
 
-            // --- Knockback ---
             Rigidbody rb = other.attachedRigidbody;
             if (rb != null)
             {
@@ -45,7 +85,12 @@ public class Bullet : MonoBehaviour
             }
         }
 
-        // Destroy bullet after collision
         Destroy(gameObject);
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, detectionRadius);
     }
 }

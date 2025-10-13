@@ -2,38 +2,40 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class Movement : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float walkSpeed = 2f;
-    public float runSpeed = 5f;
-    public float acceleration = 10f;
+    public float runSpeed = 6f;
+    public float rotationSpeed = 10f;
 
     [Header("Dash Settings")]
-    public float dashDistance = 5f;
+    public float dashDistance = 8f;
     public float dashDuration = 0.2f;
     public float dashCooldown = 2f;
 
     [Header("Camera Reference")]
     public Transform cameraTransform;
 
+    [HideInInspector] public bool isRunning = false;
+
     private Rigidbody rb;
-    private Vector3 movementInput;
-    private float targetSpeed;
-    private float currentSpeed;
+    private Vector3 movementDirection;
     private bool canDash = true;
     private bool isDashing = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true; // keep upright
+        rb.freezeRotation = true;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
     }
 
     void Update()
     {
-        HandleMovementInput();
+        HandleInput();
         HandleDash();
     }
 
@@ -43,61 +45,45 @@ public class Movement : MonoBehaviour
             MovePlayer();
     }
 
-    void HandleMovementInput()
+    void HandleInput()
     {
-        targetSpeed = Input.GetKey(KeyCode.LeftShift) ? runSpeed : walkSpeed;
-        currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
+        movementDirection = Vector3.zero;
+        if (Input.GetKey(KeyCode.Z)) movementDirection += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) movementDirection += Vector3.back;
+        if (Input.GetKey(KeyCode.Q)) movementDirection += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) movementDirection += Vector3.right;
+        movementDirection = movementDirection.normalized;
 
-        movementInput = Vector3.zero;
-        if (Input.GetKey(KeyCode.Z)) movementInput += Vector3.forward;
-        if (Input.GetKey(KeyCode.S)) movementInput += Vector3.back;
-        if (Input.GetKey(KeyCode.Q)) movementInput += Vector3.left;
-        if (Input.GetKey(KeyCode.D)) movementInput += Vector3.right;
+        if (Input.GetKeyDown(KeyCode.LeftShift) && movementDirection.magnitude > 0.1f)
+            isRunning = !isRunning;
 
-        movementInput = movementInput.normalized;
+        if (movementDirection.magnitude < 0.1f)
+            isRunning = false;
     }
 
     void MovePlayer()
     {
-        if (movementInput.magnitude > 0.1f)
-        {
-            Vector3 moveDir = cameraTransform.TransformDirection(movementInput);
-            moveDir.y = 0f;
+        if (movementDirection.magnitude < 0.1f) return;
 
-            // Rotate player smoothly
-            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-            rb.rotation = Quaternion.Slerp(rb.rotation, targetRotation, Time.fixedDeltaTime * 10f);
+        Vector3 moveDir = cameraTransform.TransformDirection(movementDirection);
+        moveDir.y = 0f;
 
-            // Move player
-            Vector3 velocity = moveDir * currentSpeed;
-            velocity.y = rb.velocity.y; // preserve vertical velocity
-            rb.velocity = velocity;
-        }
-        else
-        {
-            rb.velocity = new Vector3(0, rb.velocity.y, 0);
-        }
+        Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+
+        float speed = isRunning ? runSpeed : walkSpeed;
+
+        Vector3 newPos = rb.position + moveDir * speed * Time.fixedDeltaTime;
+        rb.MovePosition(newPos);
     }
 
     void HandleDash()
     {
         if (Input.GetKeyDown(KeyCode.LeftControl) && canDash)
         {
-            // Dash direction relative to camera
-            Vector3 dashDir = movementInput.magnitude > 0.1f
-                ? cameraTransform.TransformDirection(movementInput)
-                : transform.forward;
-
+            Vector3 dashDir = movementDirection.magnitude > 0.1f ? cameraTransform.TransformDirection(movementDirection) : transform.forward;
             dashDir.y = 0f;
-
-            // Prevent dashing directly into the camera
-            Vector3 camToPlayer = (transform.position - cameraTransform.position).normalized;
-            if (Vector3.Dot(dashDir, camToPlayer) < 0)
-            {
-                dashDir = Vector3.ProjectOnPlane(dashDir, camToPlayer).normalized;
-            }
-
-            StartCoroutine(Dash(dashDir));
+            StartCoroutine(Dash(dashDir.normalized));
         }
     }
 
@@ -107,21 +93,35 @@ public class Movement : MonoBehaviour
         isDashing = true;
 
         float elapsed = 0f;
-        float dashSpeed = dashDistance / dashDuration;
+        Vector3 startPos = rb.position;
+        Vector3 targetPos = startPos + dashDirection * dashDistance;
 
         while (elapsed < dashDuration)
         {
-            Vector3 velocity = dashDirection * dashSpeed;
-            velocity.y = rb.velocity.y; // preserve vertical
-            rb.velocity = velocity;
+            Vector3 nextPos = Vector3.Lerp(startPos, targetPos, elapsed / dashDuration);
 
+            if (Physics.CapsuleCast(
+                rb.position + Vector3.up * 0.5f,
+                rb.position + Vector3.up * 1.8f,
+                0.5f,
+                dashDirection,
+                out RaycastHit hit,
+                (nextPos - rb.position).magnitude))
+            {
+                targetPos = hit.point - dashDirection * 0.5f;
+                break;
+            }
+
+            rb.MovePosition(nextPos);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        rb.velocity = new Vector3(0, rb.velocity.y, 0); // stop horizontal dash
-        isDashing = false;
+        rb.MovePosition(targetPos);
 
+        rb.velocity = dashDirection * dashDistance / dashDuration;
+
+        isDashing = false;
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
     }

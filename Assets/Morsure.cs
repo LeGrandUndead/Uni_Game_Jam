@@ -4,25 +4,20 @@ using UnityEngine;
 
 public class Morsure : MonoBehaviour
 {
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
+    public float damage = 5f;
 
     private void OnCollisionEnter(Collision collision)
     {
-        // Vérifie si le collider a un composant SystemedeSante
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            return; 
+        }
+
         systeme_sante systemedesante = collision.gameObject.GetComponent<systeme_sante>();
         if (systemedesante != null)
         {
-            systemedesante.TakeDamage(5f); // Fait subir 10 points de dégats lors de la collision
-            Debug.Log("Morsure");
+            systemedesante.TakeDamage(damage);
+            Debug.Log($"{gameObject.name} attacked {collision.gameObject.name} for {damage} damage!");
         }
     }
 }
