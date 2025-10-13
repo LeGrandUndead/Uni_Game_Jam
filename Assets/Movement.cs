@@ -2,35 +2,45 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class Movement : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float walkSpeed = 2f;
     public float runSpeed = 5f;
-    public float acceleration = 5f;
+    public float acceleration = 10f;
+
+    [Header("Dash Settings")]
     public float dashDistance = 5f;
-    public float dashCooldown = 2f;
     public float dashDuration = 0.2f;
+    public float dashCooldown = 2f;
 
     [Header("Camera Reference")]
     public Transform cameraTransform;
 
-    private float currentSpeed = 0f;
-    private float targetSpeed = 0f;
+    private Rigidbody rb;
+    private Vector3 movementInput;
+    private float targetSpeed;
+    private float currentSpeed;
     private bool canDash = true;
     private bool isDashing = false;
 
-    private Vector3 movementDirection;
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true; // keep upright
+    }
 
     void Update()
     {
-        if (!isDashing)
-        {
-            HandleMovementInput();
-            MovePlayer();
-        }
-
+        HandleMovementInput();
         HandleDash();
+    }
+
+    void FixedUpdate()
+    {
+        if (!isDashing)
+            MovePlayer();
     }
 
     void HandleMovementInput()
@@ -38,27 +48,56 @@ public class Movement : MonoBehaviour
         targetSpeed = Input.GetKey(KeyCode.LeftShift) ? runSpeed : walkSpeed;
         currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
 
-        movementDirection = Vector3.zero;
+        movementInput = Vector3.zero;
+        if (Input.GetKey(KeyCode.Z)) movementInput += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) movementInput += Vector3.back;
+        if (Input.GetKey(KeyCode.Q)) movementInput += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) movementInput += Vector3.right;
 
-        if (Input.GetKey(KeyCode.Z)) movementDirection += Vector3.forward;
-        if (Input.GetKey(KeyCode.S)) movementDirection += Vector3.back;
-        if (Input.GetKey(KeyCode.Q)) movementDirection += Vector3.left;
-        if (Input.GetKey(KeyCode.D)) movementDirection += Vector3.right;
+        movementInput = movementInput.normalized;
+    }
 
-        movementDirection = movementDirection.normalized;
+    void MovePlayer()
+    {
+        if (movementInput.magnitude > 0.1f)
+        {
+            Vector3 moveDir = cameraTransform.TransformDirection(movementInput);
+            moveDir.y = 0f;
+
+            // Rotate player smoothly
+            Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+            rb.rotation = Quaternion.Slerp(rb.rotation, targetRotation, Time.fixedDeltaTime * 10f);
+
+            // Move player
+            Vector3 velocity = moveDir * currentSpeed;
+            velocity.y = rb.velocity.y; // preserve vertical velocity
+            rb.velocity = velocity;
+        }
+        else
+        {
+            rb.velocity = new Vector3(0, rb.velocity.y, 0);
+        }
     }
 
     void HandleDash()
     {
         if (Input.GetKeyDown(KeyCode.LeftControl) && canDash)
         {
-            // Calculate the dash direction relative to camera
-            Vector3 dashDir = movementDirection.magnitude > 0.1f
-                ? cameraTransform.TransformDirection(movementDirection)
+            // Dash direction relative to camera
+            Vector3 dashDir = movementInput.magnitude > 0.1f
+                ? cameraTransform.TransformDirection(movementInput)
                 : transform.forward;
 
             dashDir.y = 0f;
-            StartCoroutine(Dash(dashDir.normalized));
+
+            // Prevent dashing directly into the camera
+            Vector3 camToPlayer = (transform.position - cameraTransform.position).normalized;
+            if (Vector3.Dot(dashDir, camToPlayer) < 0)
+            {
+                dashDir = Vector3.ProjectOnPlane(dashDir, camToPlayer).normalized;
+            }
+
+            StartCoroutine(Dash(dashDir));
         }
     }
 
@@ -67,40 +106,23 @@ public class Movement : MonoBehaviour
         canDash = false;
         isDashing = true;
 
-        Vector3 startPosition = transform.position;
-        Vector3 targetPosition = startPosition + dashDirection * dashDistance;
-
         float elapsed = 0f;
+        float dashSpeed = dashDistance / dashDuration;
 
         while (elapsed < dashDuration)
         {
-            transform.position = Vector3.Lerp(startPosition, targetPosition, elapsed / dashDuration);
+            Vector3 velocity = dashDirection * dashSpeed;
+            velocity.y = rb.velocity.y; // preserve vertical
+            rb.velocity = velocity;
+
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        transform.position = targetPosition;
-
+        rb.velocity = new Vector3(0, rb.velocity.y, 0); // stop horizontal dash
         isDashing = false;
+
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
-    }
-
-    void MovePlayer()
-    {
-        if (movementDirection.magnitude > 0.1f)
-        {
-            // Align movement with camera direction
-            Vector3 moveDir = cameraTransform.TransformDirection(movementDirection);
-            moveDir.y = 0f;
-
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(moveDir),
-                Time.deltaTime * 10f
-            );
-
-            transform.Translate(Vector3.forward * currentSpeed * Time.deltaTime);
-        }
     }
 }

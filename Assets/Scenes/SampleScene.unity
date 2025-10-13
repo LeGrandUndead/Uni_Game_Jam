@@ -123,6 +123,36 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &149273152
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 149273153}
+  m_Layer: 0
+  m_Name: Ground Check
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &149273153
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149273152}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -1.04, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 334325647}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &170569385
 GameObject:
   m_ObjectHideFlags: 0
@@ -373,13 +403,13 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 334325642}
   serializedVersion: 2
-  m_Mass: 10
+  m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0.05
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 1
 --- !u!136 &334325644
 CapsuleCollider:
@@ -458,6 +488,7 @@ Transform:
   - {fileID: 1455693650}
   - {fileID: 1519822658}
   - {fileID: 1074893724}
+  - {fileID: 149273153}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -477,8 +508,8 @@ MonoBehaviour:
   runSpeed: 25
   acceleration: 20
   dashDistance: 25
-  dashCooldown: 0.2
   dashDuration: 0.2
+  dashCooldown: 0.2
   cameraTransform: {fileID: 963194228}
 --- !u!114 &334325649
 MonoBehaviour:
@@ -492,13 +523,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be7f3e13c00695b4eadfee9ccf83d698, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpForce: 10
-  fallMultiplier: 2.5
-  lowJumpMultiplier: 2
-  groundCheckDistance: 0.6
+  jumpForce: 8
+  fallMultiplier: 3.5
+  lowJumpMultiplier: 2.5
+  coyoteTime: 0.15
+  groundOffset: 1
+  groundCheckDistance: 1.2
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
 --- !u!114 &334325650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1040,6 +1073,7 @@ GameObject:
   - component: {fileID: 772527693}
   - component: {fileID: 772527695}
   - component: {fileID: 772527687}
+  - component: {fileID: 772527696}
   m_Layer: 0
   m_Name: Aggro
   m_TagString: Enemy
@@ -1196,6 +1230,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd5c6e81dc25cb84bbb70fbb2beda1ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &772527696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772527686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d64482c8218904b40aa8ecd3f72df1a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Sante: {fileID: 772527693}
+  DeathScreenImage: {fileID: 0}
 --- !u!1 &843495738
 GameObject:
   m_ObjectHideFlags: 0
@@ -1427,8 +1475,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 334325647}
   offset: {x: 0, y: 5, z: -7}
-  smoothSpeed: 5
+  smoothSpeed: 10
   rotationSpeed: 5
+  minDistance: 1.5
+  maxDistance: 6
+  collisionBuffer: 0.2
+  isDashing: 0
+  collisionMask:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!1 &992226575
 GameObject:
   m_ObjectHideFlags: 0
