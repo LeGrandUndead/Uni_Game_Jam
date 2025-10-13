@@ -80,7 +80,7 @@ public class PowerUp : MonoBehaviour
                 break;
         }
 
-        Destroy(gameObject);
+        Destroy(transform.root.gameObject);
         Debug.Log($"PowerUp {powerUpType} destroyed after pickup");
     }
 }

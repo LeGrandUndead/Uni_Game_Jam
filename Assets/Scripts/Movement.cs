@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
@@ -26,6 +25,8 @@ public class Movement : MonoBehaviour
     private bool isDashing = false;
     private Vector3 dashMomentum = Vector3.zero;
 
+    private bool isAZERTY = false; // Auto-detect QWERTY/AZERTY layout
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -47,11 +48,33 @@ public class Movement : MonoBehaviour
 
     void HandleInput()
     {
+        // --- Detect layout dynamically ---
+        if (Input.anyKeyDown)
+        {
+            if (Input.GetKeyDown(KeyCode.W))
+                isAZERTY = false; // QWERTY
+            else if (Input.GetKeyDown(KeyCode.Z))
+                isAZERTY = true;  // AZERTY
+        }
+
         movementDirection = Vector3.zero;
-        if (Input.GetKey(KeyCode.Z)) movementDirection += Vector3.forward;
-        if (Input.GetKey(KeyCode.S)) movementDirection += Vector3.back;
-        if (Input.GetKey(KeyCode.Q)) movementDirection += Vector3.left;
-        if (Input.GetKey(KeyCode.D)) movementDirection += Vector3.right;
+
+        // Forward/back/strafe keys based on layout
+        if (isAZERTY)
+        {
+            if (Input.GetKey(KeyCode.Z)) movementDirection += Vector3.forward;
+            if (Input.GetKey(KeyCode.S)) movementDirection += Vector3.back;
+            if (Input.GetKey(KeyCode.Q)) movementDirection += Vector3.left;
+            if (Input.GetKey(KeyCode.D)) movementDirection += Vector3.right;
+        }
+        else
+        {
+            if (Input.GetKey(KeyCode.W)) movementDirection += Vector3.forward;
+            if (Input.GetKey(KeyCode.S)) movementDirection += Vector3.back;
+            if (Input.GetKey(KeyCode.A)) movementDirection += Vector3.left;
+            if (Input.GetKey(KeyCode.D)) movementDirection += Vector3.right;
+        }
+
         movementDirection = movementDirection.normalized;
 
         // Toggle running

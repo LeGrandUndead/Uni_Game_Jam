@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class Pursuit : MonoBehaviour
 {
     [Header("Target & Stats")]
@@ -18,7 +18,7 @@ public class Pursuit : MonoBehaviour
     public float wanderInterval = 3f;
     public float smoothAcceleration = 5f;
 
-    [Header("Formation & Avoidance")]
+    [Header("Avoidance")]
     public float personalSpace = 2f;
     public float separationStrength = 5f;
 
@@ -27,31 +27,26 @@ public class Pursuit : MonoBehaviour
     public float dashForce = 5f;
     public float dashChance = 0.2f;
     public float dashCooldown = 5f;
-    public float teleportDistance = 5f;
-    public float teleportChance = 0.1f;
-    public float teleportCooldown = 10f;
 
     private Rigidbody rb;
-    private float lastWanderTime;
     private Vector3 wanderDirection;
+    private float lastWanderTime;
     private float lastDashTime;
-    private float lastTeleportTime;
     private bool isAggro = false;
     private float currentSpeed;
+    private Vector3 dashVelocity = Vector3.zero;
+
+    public static List<Pursuit> allEnemies = new List<Pursuit>();
+
+    void OnEnable() => allEnemies.Add(this);
+    void OnDisable() => allEnemies.Remove(this);
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-        // Ignore collisions with other enemies
-        foreach (var col in FindObjectsOfType<Pursuit>())
-        {
-            if (col != this)
-                Physics.IgnoreCollision(GetComponent<Collider>(), col.GetComponent<Collider>());
-        }
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
         ChooseNewWanderDirection();
     }
@@ -60,7 +55,6 @@ public class Pursuit : MonoBehaviour
     {
         if (player == null) return;
 
-        // Dynamic speed: enemies get faster over time
         currentSpeed = Mathf.Lerp(baseSpeed, maxSpeed, Time.timeSinceLevelLoad / 60f);
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
@@ -79,12 +73,11 @@ public class Pursuit : MonoBehaviour
 
     void ChasePlayer()
     {
-        Vector3 target = player.position;
+        Vector3 offset = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f));
+        Vector3 targetPos = player.position + offset;
 
-        // Apply separation from other enemies
         Vector3 separation = Vector3.zero;
-        Pursuit[] others = FindObjectsOfType<Pursuit>();
-        foreach (var other in others)
+        foreach (var other in allEnemies)
         {
             if (other == this) continue;
             Vector3 diff = transform.position - other.transform.position;
@@ -93,16 +86,18 @@ public class Pursuit : MonoBehaviour
                 separation += diff.normalized / dist;
         }
 
-        Vector3 direction = (target - transform.position).normalized * currentSpeed + separation * separationStrength;
-        direction.y = 0f;
+        Vector3 moveDir = (targetPos - transform.position).normalized * currentSpeed + separation * separationStrength;
 
-        // Move smoothly with Rigidbody
-        rb.velocity = Vector3.Lerp(rb.velocity, direction, Time.deltaTime * smoothAcceleration);
+        moveDir += dashVelocity;                      
+        dashVelocity = Vector3.Lerp(dashVelocity, Vector3.zero, Time.deltaTime * 2f);
 
-        // Rotate toward movement
-        if (direction.sqrMagnitude > 0.1f)
+        moveDir.y = rb.velocity.y;
+        rb.velocity = Vector3.Lerp(rb.velocity, moveDir, Time.deltaTime * smoothAcceleration);
+
+        Vector3 flatDir = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+        if (flatDir.sqrMagnitude > 0.01f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(direction.normalized);
+            Quaternion targetRot = Quaternion.LookRotation(flatDir.normalized);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
         }
     }
@@ -113,12 +108,13 @@ public class Pursuit : MonoBehaviour
             ChooseNewWanderDirection();
 
         Vector3 desired = wanderDirection * baseSpeed;
-        desired.y = 0f;
+        desired.y = rb.velocity.y;
         rb.velocity = Vector3.Lerp(rb.velocity, desired, Time.deltaTime * smoothAcceleration);
 
-        if (rb.velocity.sqrMagnitude > 0.1f)
+        Vector3 flatDir = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+        if (flatDir.sqrMagnitude > 0.01f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(rb.velocity.normalized);
+            Quaternion targetRot = Quaternion.LookRotation(flatDir.normalized);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
         }
     }
@@ -126,7 +122,7 @@ public class Pursuit : MonoBehaviour
     void ChooseNewWanderDirection()
     {
         Vector2 rand = Random.insideUnitCircle.normalized;
-        wanderDirection = new Vector3(rand.x, 0, rand.y);
+        wanderDirection = new Vector3(rand.x, 0f, rand.y);
         lastWanderTime = Time.time;
     }
 
@@ -136,23 +132,13 @@ public class Pursuit : MonoBehaviour
         if (Time.time - lastDashTime > dashCooldown && Random.value < dashChance)
         {
             Vector3 dashDir = (player.position - transform.position).normalized;
-            dashDir.y = 0;
-            rb.AddForce(dashDir * dashForce, ForceMode.Impulse);
+            dashDir.y = 0f;
+            dashVelocity += dashDir * dashForce;
             lastDashTime = Time.time;
         }
 
-        // Teleport
-        if (Time.time - lastTeleportTime > teleportCooldown && Random.value < teleportChance)
-        {
-            Vector3 randomDir = Random.insideUnitSphere;
-            randomDir.y = 0;
-            randomDir.Normalize();
-            transform.position += randomDir * teleportDistance;
-            lastTeleportTime = Time.time;
-        }
-
         // Jump occasionally
-        if (Random.value < 0.01f)
+        if (Random.value < 0.01f && Mathf.Abs(rb.velocity.y) < 0.1f)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }

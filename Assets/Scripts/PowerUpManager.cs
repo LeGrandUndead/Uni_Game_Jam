@@ -21,13 +21,21 @@ public class PowerUpManager : MonoBehaviour
 
     void Start()
     {
+        // All special powerups except Heal
         specialPrefabs = new List<GameObject>() { riflePrefab, homingPrefab, spreadshotPrefab, shockwavePrefab };
     }
 
-    public void SpawnPowerUpsForWave()
+    /// <summary>
+    /// Call this at the start of each wave
+    /// </summary>
+    /// <param name="currentWave">Current wave number</param>
+    /// <param name="maxEnemyTypesUnlocked">Number of enemy types unlocked for this wave</param>
+    public void SpawnPowerUpsForWave(int currentWave, int maxEnemyTypesUnlocked)
     {
-        // Spawn 1 special powerup
-        SpawnRandomSpecial();
+        Debug.Log($"[PowerUpManager] Spawning powerups for wave {currentWave}");
+
+        // Spawn 1 special powerup if unlocked
+        SpawnRandomSpecial(maxEnemyTypesUnlocked);
 
         // Spawn 2–3 heal powerups
         int healCount = Random.Range(healPerWave, maxHealPerWave + 1);
@@ -37,14 +45,40 @@ public class PowerUpManager : MonoBehaviour
         }
     }
 
-    void SpawnRandomSpecial()
+    /// <summary>
+    /// Spawn one special powerup if the corresponding enemy type is unlocked
+    /// </summary>
+    /// <param name="maxEnemyTypesUnlocked">Number of enemy types unlocked</param>
+    void SpawnRandomSpecial(int maxEnemyTypesUnlocked)
     {
-        GameObject prefab = specialPrefabs[Random.Range(0, specialPrefabs.Count)];
+        // Only allow special powerups corresponding to unlocked enemy types
+        List<GameObject> unlockedSpecials = new List<GameObject>();
+
+        // Example logic: each new enemy type unlocks a powerup in order
+        for (int i = 0; i < maxEnemyTypesUnlocked - 1 && i < specialPrefabs.Count; i++)
+        {
+            unlockedSpecials.Add(specialPrefabs[i]);
+        }
+
+        if (unlockedSpecials.Count == 0)
+        {
+            Debug.Log("[PowerUpManager] No special powerups unlocked yet this wave.");
+            return;
+        }
+
+        GameObject prefab = unlockedSpecials[Random.Range(0, unlockedSpecials.Count)];
         SpawnAtRandomPosition(prefab);
+        Debug.Log($"[PowerUpManager] Spawned special powerup: {prefab.name}");
     }
 
     void SpawnAtRandomPosition(GameObject prefab)
     {
+        if (prefab == null)
+        {
+            Debug.LogWarning("[PowerUpManager] Tried to spawn null prefab!");
+            return;
+        }
+
         Vector3 pos = new Vector3(
             Random.Range(mapMinBounds.x, mapMaxBounds.x),
             Random.Range(mapMinBounds.y, mapMaxBounds.y),
@@ -52,5 +86,6 @@ public class PowerUpManager : MonoBehaviour
         );
 
         Instantiate(prefab, pos, Quaternion.identity);
+        Debug.Log($"[PowerUpManager] Spawned {prefab.name} at {pos}");
     }
 }
