@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - Enemy
+  - Rifle
+  - Heal
+  - Homing
+  - Spreadshot
+  - Shockwave
   layers:
   - Default
   - TransparentFX
