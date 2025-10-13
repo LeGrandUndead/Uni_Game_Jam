@@ -17,6 +17,7 @@ public class Follow_player : MonoBehaviour
 
     private float yaw = 0f;
     private float pitch = 5f;
+    private float cameraRadius = 0.3f;
 
     void LateUpdate()
     {
@@ -24,7 +25,6 @@ public class Follow_player : MonoBehaviour
 
         yaw += Input.GetAxis("Mouse X") * rotationSpeed;
         pitch -= Input.GetAxis("Mouse Y") * rotationSpeed;
-
         pitch = Mathf.Clamp(pitch, -20f, 20f);
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
 
@@ -39,10 +39,13 @@ public class Follow_player : MonoBehaviour
         float dist = dir.magnitude;
         RaycastHit hit;
 
-        if (Physics.SphereCast(player.position, 0.3f, dir.normalized, out hit, dist, collisionLayers))
-            desiredPosition = hit.point - dir.normalized * 0.3f;
+        if (Physics.SphereCast(player.position, cameraRadius, dir.normalized, out hit, dist, collisionLayers))
+        {
+            desiredPosition = hit.point - dir.normalized * cameraRadius;
+        }
 
         transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
+
         transform.LookAt(player.position + Vector3.up * 0.8f);
 
         if (changeFOV && Camera.main != null && playerMovement != null)

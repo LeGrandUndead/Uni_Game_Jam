@@ -8,6 +8,7 @@ public class Movement : MonoBehaviour
     [Header("Movement Settings")]
     public float walkSpeed = 2f;
     public float runSpeed = 6f;
+    public float acceleration = 10f;
     public float rotationSpeed = 10f;
 
     [Header("Dash Settings")]
@@ -63,18 +64,44 @@ public class Movement : MonoBehaviour
 
     void MovePlayer()
     {
-        if (movementDirection.magnitude < 0.1f) return;
+        if (movementDirection.magnitude < 0.1f)
+        {
+            rb.velocity = new Vector3(0, rb.velocity.y, 0);
+            return;
+        }
 
         Vector3 moveDir = cameraTransform.TransformDirection(movementDirection);
         moveDir.y = 0f;
-
-        Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+        moveDir.Normalize();
 
         float speed = isRunning ? runSpeed : walkSpeed;
+        Vector3 desiredVelocity = moveDir * speed;
 
-        Vector3 newPos = rb.position + moveDir * speed * Time.fixedDeltaTime;
-        rb.MovePosition(newPos);
+        RaycastHit hit;
+        if (Physics.CapsuleCast(
+            rb.position + Vector3.up * 0.5f,
+            rb.position + Vector3.up * 1.8f,
+            0.5f,
+            moveDir,
+            out hit,
+            speed * Time.fixedDeltaTime,
+            LayerMask.GetMask("Environment")))
+        {
+            Vector3 wallNormal = hit.normal;
+            Vector3 slideDir = Vector3.ProjectOnPlane(desiredVelocity, wallNormal);
+            desiredVelocity.x = slideDir.x;
+            desiredVelocity.z = slideDir.z;
+        }
+
+        desiredVelocity.y = rb.velocity.y; 
+        rb.velocity = Vector3.Lerp(rb.velocity, desiredVelocity, acceleration * Time.fixedDeltaTime);
+
+        Vector3 flatVel = new Vector3(desiredVelocity.x, 0, desiredVelocity.z);
+        if (flatVel.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(flatVel);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+        }
     }
 
     void HandleDash()
@@ -93,35 +120,18 @@ public class Movement : MonoBehaviour
         isDashing = true;
 
         float elapsed = 0f;
-        Vector3 startPos = rb.position;
-        Vector3 targetPos = startPos + dashDirection * dashDistance;
+        float dashSpeed = dashDistance / dashDuration;
+        float verticalVelocity = rb.velocity.y;
 
         while (elapsed < dashDuration)
         {
-            Vector3 nextPos = Vector3.Lerp(startPos, targetPos, elapsed / dashDuration);
-
-            if (Physics.CapsuleCast(
-                rb.position + Vector3.up * 0.5f,
-                rb.position + Vector3.up * 1.8f,
-                0.5f,
-                dashDirection,
-                out RaycastHit hit,
-                (nextPos - rb.position).magnitude))
-            {
-                targetPos = hit.point - dashDirection * 0.5f;
-                break;
-            }
-
-            rb.MovePosition(nextPos);
+            rb.velocity = new Vector3(dashDirection.x * dashSpeed, verticalVelocity, dashDirection.z * dashSpeed);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        rb.MovePosition(targetPos);
-
-        rb.velocity = dashDirection * dashDistance / dashDuration;
-
         isDashing = false;
+
         yield return new WaitForSeconds(dashCooldown);
         canDash = true;
     }

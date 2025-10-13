@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class Pursuit : MonoBehaviour
 {
     [Header("Target & Stats")]
@@ -28,6 +28,8 @@ public class Pursuit : MonoBehaviour
     public float teleportCooldown = 10f;
 
     private Rigidbody rb;
+    private CapsuleCollider capsule;
+
     private float lifeTimer = 0f;
     private float currentSpeed = 0f;
     private Vector3 wanderDirection;
@@ -40,9 +42,14 @@ public class Pursuit : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        capsule = GetComponent<CapsuleCollider>();
         rb.freezeRotation = true;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
         ChooseNewWanderDirection();
 
+        // Ignore collisions with other enemies
         foreach (var col in FindObjectsOfType<Pursuit>())
         {
             if (col != this)
@@ -78,18 +85,20 @@ public class Pursuit : MonoBehaviour
         if (direction.magnitude < stopDistance) return;
 
         SmoothRotate(direction);
-        rb.MovePosition(transform.position + direction.normalized * currentSpeed * Time.deltaTime);
+
+        Vector3 move = direction.normalized * currentSpeed * Time.deltaTime;
+        MoveWithCollision(move);
     }
 
     void Wander()
     {
         if (Time.time - lastWanderTime > wanderInterval)
-        {
             ChooseNewWanderDirection();
-        }
 
         SmoothRotate(wanderDirection);
-        rb.MovePosition(transform.position + wanderDirection * currentSpeed * Time.deltaTime);
+
+        Vector3 move = wanderDirection * currentSpeed * Time.deltaTime;
+        MoveWithCollision(move);
     }
 
     void ChooseNewWanderDirection()
@@ -121,13 +130,44 @@ public class Pursuit : MonoBehaviour
             Vector3 randomDir = Random.insideUnitSphere;
             randomDir.y = 0;
             randomDir.Normalize();
-            transform.position += randomDir * teleportDistance;
+            Vector3 targetPos = transform.position + randomDir * teleportDistance;
+
+            // Keep teleporting above ground
+            RaycastHit hit;
+            if (Physics.Raycast(targetPos + Vector3.up * 5f, Vector3.down, out hit, 10f, LayerMask.GetMask("Environment")))
+                transform.position = hit.point + Vector3.up * 0.5f;
+            else
+                transform.position = targetPos;
+
             lastTeleportTime = Time.time;
         }
 
-        if (Random.value < 0.01f)
-        {
+        // Random jump
+        if (Random.value < 0.01f && IsGrounded())
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+    }
+
+    void MoveWithCollision(Vector3 move)
+    {
+        Vector3 bottom = transform.position + capsule.center - Vector3.up * (capsule.height / 2 - capsule.radius);
+        Vector3 top = bottom + Vector3.up * (capsule.height - capsule.radius * 2);
+
+        RaycastHit hit;
+        if (Physics.CapsuleCast(bottom, top, capsule.radius, move.normalized, out hit, move.magnitude, LayerMask.GetMask("Environment")))
+        {
+            // Slide along walls
+            Vector3 slide = Vector3.ProjectOnPlane(move, hit.normal);
+            rb.MovePosition(transform.position + slide);
         }
+        else
+        {
+            rb.MovePosition(transform.position + move);
+        }
+    }
+
+    bool IsGrounded()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        return Physics.Raycast(origin, Vector3.down, 0.2f, LayerMask.GetMask("Environment"));
     }
 }
