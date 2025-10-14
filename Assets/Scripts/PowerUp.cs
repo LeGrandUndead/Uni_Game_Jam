@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public enum PowerUpType
 {
@@ -6,7 +6,10 @@ public enum PowerUpType
     Rifle,
     Homing,
     Spreadshot,
-    Shockwave
+    Shockwave,
+    Dash,        // NEW
+    SpeedBoost,  // NEW
+    Turret       // NEW
 }
 
 public class PowerUp : MonoBehaviour
@@ -25,6 +28,8 @@ public class PowerUp : MonoBehaviour
         Debug.Log($"Player touched powerup: {powerUpType}");
 
         Attac playerAttack = other.GetComponent<Attac>();
+        Movement movement = other.GetComponent<Movement>();
+
         systeme_sante playerHealth = other.GetComponent<systeme_sante>();
 
         switch (powerUpType)
@@ -78,6 +83,21 @@ public class PowerUp : MonoBehaviour
                 else
                     Debug.LogWarning("Player has no Attac component!");
                 break;
+
+            case PowerUpType.Dash:
+                if (movement != null)
+                    movement.dashEnabled = true;
+                break;
+
+            case PowerUpType.SpeedBoost:
+                if (movement != null)
+                    movement.speedBoostEnabled = true;
+                break;
+
+            //case PowerUpType.Turret:
+            //    if (playerAttack != null)
+            //        playerAttack.SpawnTurrets(); // You’ll implement this method
+            //    break;
         }
 
         Destroy(transform.root.gameObject);

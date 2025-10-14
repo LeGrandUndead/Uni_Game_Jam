@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,6 +11,8 @@ public class PowerUpManager : MonoBehaviour
     public GameObject spreadshotPrefab;
     public GameObject shockwavePrefab;
 
+
+
     [Header("Spawn Settings")]
     public Vector3 mapMinBounds;
     public Vector3 mapMaxBounds;
@@ -21,71 +23,57 @@ public class PowerUpManager : MonoBehaviour
 
     void Start()
     {
-        // All special powerups except Heal
         specialPrefabs = new List<GameObject>() { riflePrefab, homingPrefab, spreadshotPrefab, shockwavePrefab };
     }
 
-    /// <summary>
-    /// Call this at the start of each wave
-    /// </summary>
-    /// <param name="currentWave">Current wave number</param>
-    /// <param name="maxEnemyTypesUnlocked">Number of enemy types unlocked for this wave</param>
-    public void SpawnPowerUpsForWave(int currentWave, int maxEnemyTypesUnlocked)
+    public void SpawnPowerUpsForWave(int currentWave, int totalEnemyTypes)
     {
-        Debug.Log($"[PowerUpManager] Spawning powerups for wave {currentWave}");
+        Debug.Log($"⚡ Spawning powerups for wave {currentWave}");
 
-        // Spawn 1 special powerup if unlocked
-        SpawnRandomSpecial(maxEnemyTypesUnlocked);
+        // Spawn 1 special powerup near ground
+        SpawnRandomSpecialAtGround();
 
-        // Spawn 2�3 heal powerups
+        // Spawn 2–3 heal powerups in the air
         int healCount = Random.Range(healPerWave, maxHealPerWave + 1);
         for (int i = 0; i < healCount; i++)
         {
-            SpawnAtRandomPosition(healPrefab);
+            SpawnHealInAir();
         }
     }
 
-    /// <summary>
-    /// Spawn one special powerup if the corresponding enemy type is unlocked
-    /// </summary>
-    /// <param name="maxEnemyTypesUnlocked">Number of enemy types unlocked</param>
-    void SpawnRandomSpecial(int maxEnemyTypesUnlocked)
+    void SpawnRandomSpecialAtGround()
     {
-        // Only allow special powerups corresponding to unlocked enemy types
-        List<GameObject> unlockedSpecials = new List<GameObject>();
 
-        // Example logic: each new enemy type unlocks a powerup in order
-        for (int i = 0; i < maxEnemyTypesUnlocked - 1 && i < specialPrefabs.Count; i++)
+        if (specialPrefabs == null || specialPrefabs.Count == 0)
         {
-            unlockedSpecials.Add(specialPrefabs[i]);
-        }
-
-        if (unlockedSpecials.Count == 0)
-        {
-            Debug.Log("[PowerUpManager] No special powerups unlocked yet this wave.");
+            Debug.Log("⚠️ No special powerups left to spawn this wave, skipping...");
             return;
         }
 
-        GameObject prefab = unlockedSpecials[Random.Range(0, unlockedSpecials.Count)];
-        SpawnAtRandomPosition(prefab);
-        Debug.Log($"[PowerUpManager] Spawned special powerup: {prefab.name}");
+        GameObject prefab = specialPrefabs[Random.Range(0, specialPrefabs.Count)];
+
+        // Center of the map
+        Vector3 center = (mapMinBounds + mapMaxBounds) / 2f;
+        center.y = -1.32f; // Ground level
+
+        // Small random offset to avoid exact overlap
+        Vector3 offset = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f));
+      
+        Instantiate(prefab, center + offset, Quaternion.identity);
+        specialPrefabs.Remove(prefab);
+
+        Debug.Log($"✨ Spawned special powerup {prefab.name} at {center + offset}");
     }
 
-    void SpawnAtRandomPosition(GameObject prefab)
+    void SpawnHealInAir()
     {
-        if (prefab == null)
-        {
-            Debug.LogWarning("[PowerUpManager] Tried to spawn null prefab!");
-            return;
-        }
-
         Vector3 pos = new Vector3(
             Random.Range(mapMinBounds.x, mapMaxBounds.x),
-            Random.Range(mapMinBounds.y, mapMaxBounds.y),
+            Random.Range(-2f, -3f), // Slightly above ground
             Random.Range(mapMinBounds.z, mapMaxBounds.z)
         );
 
-        Instantiate(prefab, pos, Quaternion.identity);
-        Debug.Log($"[PowerUpManager] Spawned {prefab.name} at {pos}");
+        Instantiate(healPrefab, pos, Quaternion.identity);
+        Debug.Log($"💚 Spawned heal powerup at {pos}");
     }
 }

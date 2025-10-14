@@ -35,7 +35,6 @@ public class systeme_sante : MonoBehaviour
         if (IsDead) return;
 
         current_health = Mathf.Clamp(current_health - damage, 0f, max_health);
-        Debug.Log($"{gameObject.name} took {damage} damage. Health: {current_health}/{max_health}");
 
         OnChangedSante?.Invoke(ObtenirSanteNormalisee());
 
@@ -51,13 +50,11 @@ public class systeme_sante : MonoBehaviour
         if (IsDead) return;
 
         current_health = Mathf.Clamp(current_health + amount, 0f, max_health);
-        Debug.Log($"{gameObject.name} healed for {amount}. Health: {current_health}/{max_health}");
         OnChangedSante?.Invoke(ObtenirSanteNormalisee());
     }
 
     private void Die()
     {
-        Debug.Log($"{gameObject.name} est mort!");
 
         // Notify listeners (WaveManager, effects, etc.)
         OnDeath?.Invoke();

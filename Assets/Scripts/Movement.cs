@@ -25,6 +25,9 @@ public class Movement : MonoBehaviour
     private bool isDashing = false;
     private Vector3 dashMomentum = Vector3.zero;
 
+    public bool dashEnabled = false;
+    public bool speedBoostEnabled = false;
+
     private bool isAZERTY = false; // Auto-detect QWERTY/AZERTY layout
 
     void Start()
@@ -33,6 +36,9 @@ public class Movement : MonoBehaviour
         rb.freezeRotation = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void Update()
@@ -98,6 +104,7 @@ public class Movement : MonoBehaviour
         Vector3 desiredMove = camForward * movementDirection.z + camRight * movementDirection.x;
 
         float speed = isRunning ? runSpeed : walkSpeed;
+        if (speedBoostEnabled) speed *= 2f;
         Vector3 desiredVelocity = desiredMove * speed + dashMomentum;
         desiredVelocity.y = rb.velocity.y;
 
@@ -134,7 +141,7 @@ public class Movement : MonoBehaviour
 
     void HandleDash()
     {
-        if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && canDash && dashEnabled)
         {
             Vector3 dashDir = movementDirection.magnitude > 0.1f ?
                               cameraTransform.TransformDirection(movementDirection) : cameraTransform.forward;

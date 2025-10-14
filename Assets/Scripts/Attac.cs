@@ -104,4 +104,5 @@ public class Attac : MonoBehaviour
             Destroy(other.gameObject);
         }
     }
+
 }

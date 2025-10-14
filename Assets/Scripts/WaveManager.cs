@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,6 +13,9 @@ public class WaveManager : MonoBehaviour
     public float spawnInterval = 0.5f;
     public float timeBetweenWaves = 5f;
     public float difficultyMultiplier = 1.2f;
+
+    [Header("PowerUp Manager")]
+    public PowerUpManager powerUpManager;
 
     [Header("UI")]
     public Text waveText;
@@ -38,29 +41,39 @@ public class WaveManager : MonoBehaviour
 
         currentWave++;
         int enemiesThisWave = Mathf.RoundToInt(startingEnemies * Mathf.Pow(difficultyMultiplier, currentWave - 1));
+        Debug.Log($"<color=yellow>🌊 Starting Wave {currentWave} ({enemiesThisWave} enemies)</color>");
 
-        // Gradually unlock enemy types
+        if (powerUpManager != null && spawner != null && spawner.enemyPrefabs != null)
+            powerUpManager.SpawnPowerUpsForWave(currentWave, spawner.enemyPrefabs.Length);
+
         int unlockedTypes = Mathf.Min(currentWave, spawner.enemyPrefabs.Length);
 
         for (int i = 0; i < enemiesThisWave; i++)
         {
-            GameObject enemy = spawner.SpawnEnemy(unlockedTypes, currentWave);
+            GameObject enemy = null;
+
+            try
+            {
+                enemy = spawner.SpawnEnemy(unlockedTypes, currentWave);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"💥 Failed to spawn enemy {i}: {ex.Message}");
+            }
+
             if (enemy != null)
             {
                 enemiesAlive++;
-
-                systeme_sante health = enemy.GetComponent<systeme_sante>();
+                var health = enemy.GetComponent<systeme_sante>();
                 if (health != null)
-                    health.OnDeath += () => { enemiesAlive--; };
+                    health.OnDeath += () => enemiesAlive--;
             }
 
             yield return new WaitForSeconds(spawnInterval);
         }
 
-        // Wait until all enemies die
         yield return new WaitUntil(() => enemiesAlive <= 0);
-
-        // Start next wave
         StartCoroutine(StartNextWave());
     }
+
 }

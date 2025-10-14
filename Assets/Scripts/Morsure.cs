@@ -17,7 +17,6 @@ public class Morsure : MonoBehaviour
         if (systemedesante != null)
         {
             systemedesante.TakeDamage(damage);
-            Debug.Log($"{gameObject.name} attacked {collision.gameObject.name} for {damage} damage!");
         }
     }
 }

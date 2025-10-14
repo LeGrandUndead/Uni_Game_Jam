@@ -40,7 +40,6 @@ public class Jump : MonoBehaviour
 
         ApplyBetterGravity();
 
-        Debug.DrawLine(groundCheck.position, groundCheck.position + Vector3.down * groundCheckRadius * 2f, isGrounded ? Color.green : Color.red);
         GizmosDrawSphere();
     }
 
@@ -51,7 +50,6 @@ public class Jump : MonoBehaviour
 
     void JumpAction()
     {
-        Debug.Log("<color=green>Jump!</color>");
         rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
