@@ -29,7 +29,6 @@ public class Barre_Sante : MonoBehaviour
         }
     }
 
-    // Start is called before the first frame update
     void Start()
     {
         if (Sliderdesante == null || Systemdesante == null) return;
@@ -38,7 +37,6 @@ public class Barre_Sante : MonoBehaviour
         Sliderdesante.maxValue = 1f;
         Sliderdesante.value = 1f;
 
-        // Initialize with current health
         float initialHealth = Systemdesante.ObtenirSanteNormalisee();
         targetFillAmount = Mathf.Clamp01(initialHealth);
         UpdateFillColor(initialHealth);
@@ -46,7 +44,6 @@ public class Barre_Sante : MonoBehaviour
         Systemdesante.OnChangedSante += HandleHealthChanged;
     }
 
-    // Update is called once per frame
     void Update()
     {
         Sliderdesante.value = Mathf.Lerp(Sliderdesante.value, targetFillAmount, Time.deltaTime * smoothSpeed);

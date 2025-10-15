@@ -19,6 +19,7 @@ public class WaveManager : MonoBehaviour
 
     [Header("UI")]
     public Text waveText;
+    public Text score;
 
     [HideInInspector] public int currentWave = 0;
     private int enemiesAlive = 0;
@@ -30,9 +31,11 @@ public class WaveManager : MonoBehaviour
 
     void Update()
     {
-        // Update wave UI
         if (waveText != null)
             waveText.text = $"Wave: {currentWave}";
+
+        if (score != null)
+            score.text = $"{currentWave - 1}";
     }
 
     IEnumerator StartNextWave()
@@ -41,7 +44,6 @@ public class WaveManager : MonoBehaviour
 
         currentWave++;
         int enemiesThisWave = Mathf.RoundToInt(startingEnemies * Mathf.Pow(difficultyMultiplier, currentWave - 1));
-        Debug.Log($"<color=yellow>🌊 Starting Wave {currentWave} ({enemiesThisWave} enemies)</color>");
 
         if (powerUpManager != null && spawner != null && spawner.enemyPrefabs != null)
             powerUpManager.SpawnPowerUpsForWave(currentWave, spawner.enemyPrefabs.Length);

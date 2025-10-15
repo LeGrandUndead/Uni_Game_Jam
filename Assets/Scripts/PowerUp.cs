@@ -7,25 +7,26 @@ public enum PowerUpType
     Homing,
     Spreadshot,
     Shockwave,
-    Dash,        // NEW
-    SpeedBoost,  // NEW
-    Turret       // NEW
+    Dash,       
+    SpeedBoost, 
+    Turret      
 }
 
 public class PowerUp : MonoBehaviour
 {
+    public GameObject turretPrefab;
+    public Transform player;
+
     public PowerUpType powerUpType;
-    public float healAmount = 20f; // Only used if Heal
+    public float healAmount = 20f; 
 
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player"))
         {
-            Debug.Log($"PowerUp {powerUpType} ignored collision with {other.name}");
             return;
         }
 
-        Debug.Log($"Player touched powerup: {powerUpType}");
 
         Attac playerAttack = other.GetComponent<Attac>();
         Movement movement = other.GetComponent<Movement>();
@@ -38,50 +39,35 @@ public class PowerUp : MonoBehaviour
                 if (playerHealth != null)
                 {
                     playerHealth.Heal(healAmount);
-                    Debug.Log($"Applied Heal: {healAmount} to player {other.name}");
                 }
-                else
-                    Debug.LogWarning("Player has no systeme_sante component!");
                 break;
 
             case PowerUpType.Rifle:
                 if (playerAttack != null)
                 {
                     playerAttack.rifleMode = true;
-                    Debug.Log("Rifle mode enabled for player");
                 }
-                else
-                    Debug.LogWarning("Player has no Attac component!");
                 break;
 
             case PowerUpType.Homing:
                 if (playerAttack != null)
                 {
                     playerAttack.homingMode = true;
-                    Debug.Log("Homing mode enabled for player");
                 }
-                else
-                    Debug.LogWarning("Player has no Attac component!");
                 break;
 
             case PowerUpType.Spreadshot:
                 if (playerAttack != null)
                 {
                     playerAttack.spreadShot = true;
-                    Debug.Log("Spreadshot mode enabled for player");
                 }
-                else
-                    Debug.LogWarning("Player has no Attac component!");
                 break;
 
             case PowerUpType.Shockwave:
                 if (playerAttack != null)
                 {
                     playerAttack.shockwaveEnabled = true;
-                    Debug.Log("Shockwave mode enabled for player");
                 }
-                else
-                    Debug.LogWarning("Player has no Attac component!");
                 break;
 
             case PowerUpType.Dash:
@@ -94,13 +80,19 @@ public class PowerUp : MonoBehaviour
                     movement.speedBoostEnabled = true;
                 break;
 
-            //case PowerUpType.Turret:
-            //    if (playerAttack != null)
-            //        playerAttack.SpawnTurrets(); // You’ll implement this method
-            //    break;
+            case PowerUpType.Turret:
+                if (turretPrefab != null)
+                {
+                    Vector3 spawnPos = other.transform.position + new Vector3(Random.Range(-2f, 2f), 0f, Random.Range(-2f, 2f));
+                    GameObject turret = Instantiate(turretPrefab, spawnPos, Quaternion.identity);
+
+                    Turret turretScript = turret.GetComponent<Turret>();
+                    if (turretScript != null)
+                        turretScript.player = other.transform;
+                }
+                break;
         }
 
         Destroy(transform.root.gameObject);
-        Debug.Log($"PowerUp {powerUpType} destroyed after pickup");
     }
 }

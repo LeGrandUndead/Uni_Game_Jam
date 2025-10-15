@@ -28,7 +28,7 @@ public class Movement : MonoBehaviour
     public bool dashEnabled = false;
     public bool speedBoostEnabled = false;
 
-    private bool isAZERTY = false; // Auto-detect QWERTY/AZERTY layout
+    private bool isAZERTY = false;
 
     void Start()
     {
@@ -54,18 +54,16 @@ public class Movement : MonoBehaviour
 
     void HandleInput()
     {
-        // --- Detect layout dynamically ---
         if (Input.anyKeyDown)
         {
             if (Input.GetKeyDown(KeyCode.W))
-                isAZERTY = false; // QWERTY
+                isAZERTY = false; 
             else if (Input.GetKeyDown(KeyCode.Z))
-                isAZERTY = true;  // AZERTY
+                isAZERTY = true;
         }
 
         movementDirection = Vector3.zero;
 
-        // Forward/back/strafe keys based on layout
         if (isAZERTY)
         {
             if (Input.GetKey(KeyCode.Z)) movementDirection += Vector3.forward;
@@ -83,7 +81,6 @@ public class Movement : MonoBehaviour
 
         movementDirection = movementDirection.normalized;
 
-        // Toggle running
         if (Input.GetKeyDown(KeyCode.LeftControl) && movementDirection.magnitude > 0.1f)
             isRunning = !isRunning;
 
@@ -93,7 +90,6 @@ public class Movement : MonoBehaviour
 
     void MovePlayer()
     {
-        // Convert movement to camera-relative
         Vector3 camForward = cameraTransform.forward;
         camForward.y = 0f;
         camForward.Normalize();
@@ -104,11 +100,10 @@ public class Movement : MonoBehaviour
         Vector3 desiredMove = camForward * movementDirection.z + camRight * movementDirection.x;
 
         float speed = isRunning ? runSpeed : walkSpeed;
-        if (speedBoostEnabled) speed *= 2f;
+        if (speedBoostEnabled) speed *= 1.5f;
         Vector3 desiredVelocity = desiredMove * speed + dashMomentum;
         desiredVelocity.y = rb.velocity.y;
 
-        // Wall sliding
         RaycastHit hit;
         if (Physics.CapsuleCast(
             rb.position + Vector3.up * 0.5f,
@@ -124,15 +119,12 @@ public class Movement : MonoBehaviour
             desiredVelocity.z = slideDir.z;
         }
 
-        // Smooth velocity
         rb.velocity = Vector3.Lerp(rb.velocity, desiredVelocity, acceleration * Time.fixedDeltaTime);
 
-        // Player rotation = camera rotation
         Vector3 flatCamForward = camForward;
         if (flatCamForward.sqrMagnitude > 0.01f)
             transform.rotation = Quaternion.Euler(0, cameraTransform.eulerAngles.y, 0);
 
-        // Gradually reduce dash momentum
         if (dashMomentum.magnitude > 0.01f)
             dashMomentum = Vector3.Lerp(dashMomentum, Vector3.zero, 5f * Time.fixedDeltaTime);
         else
@@ -147,6 +139,7 @@ public class Movement : MonoBehaviour
                               cameraTransform.TransformDirection(movementDirection) : cameraTransform.forward;
             dashDir.y = 0f;
             StartCoroutine(Dash(dashDir.normalized));
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.dash);
         }
     }
 
@@ -166,7 +159,6 @@ public class Movement : MonoBehaviour
             yield return null;
         }
 
-        // Keep momentum after dash
         dashMomentum = dashDirection * dashDistance / dashDuration;
 
         isDashing = false;

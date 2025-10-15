@@ -211,17 +211,16 @@ MonoBehaviour:
   maxSpeed: 50
   rotationSpeed: 15
   stopDistance: 1.5
+  chaseRadius: 20
   wanderRadius: 100
   wanderInterval: 2
-  chaseRadius: 20
   smoothAcceleration: 3
+  personalSpace: 2
+  separationStrength: 5
   jumpForce: 5
   dashForce: 9.1
   dashChance: 0.3
   dashCooldown: 1
-  teleportDistance: 5
-  teleportChance: 0.2
-  teleportCooldown: 5
 --- !u!114 &8591223354235114283
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,7 +247,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd5c6e81dc25cb84bbb70fbb2beda1ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damage: 5
+  damage: 15
+  playerKnockbackForce: -2
+  enemyKnockbackForce: 3
 --- !u!114 &6451918678718181835
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -262,7 +263,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Sante: {fileID: 8591223354235114283}
-  DeathScreenImage: {fileID: 0}
 --- !u!1 &3678754847894573551
 GameObject:
   m_ObjectHideFlags: 0

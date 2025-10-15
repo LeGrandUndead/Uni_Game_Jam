@@ -128,7 +128,6 @@ public class Pursuit : MonoBehaviour
 
     void TryRandomAbilities()
     {
-        // Dash
         if (Time.time - lastDashTime > dashCooldown && Random.value < dashChance)
         {
             Vector3 dashDir = (player.position - transform.position).normalized;
@@ -137,10 +136,10 @@ public class Pursuit : MonoBehaviour
             lastDashTime = Time.time;
         }
 
-        // Jump occasionally
         if (Random.value < 0.01f && Mathf.Abs(rb.velocity.y) < 0.1f)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.enemyJump);
         }
     }
 }

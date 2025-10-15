@@ -10,6 +10,9 @@ TagManager:
   - Homing
   - Spreadshot
   - Shockwave
+  - Dash
+  - SpeedBoost
+  - Turret
   layers:
   - Default
   - TransparentFX

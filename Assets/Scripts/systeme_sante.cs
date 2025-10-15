@@ -4,10 +4,8 @@ using UnityEngine;
 
 public class systeme_sante : MonoBehaviour
 {
-    // Event when health changes (for UI or effects)
     public event System.Action<float> OnChangedSante;
 
-    // ✅ New event for death (WaveManager will use this)
     public event System.Action OnDeath;
 
     [SerializeField] private float max_health = 100f;
@@ -56,10 +54,15 @@ public class systeme_sante : MonoBehaviour
     private void Die()
     {
 
-        // Notify listeners (WaveManager, effects, etc.)
         OnDeath?.Invoke();
 
-        // Optionally: destroy the enemy
-        Destroy(gameObject);
+        if (CompareTag("Player"))
+        {
+            Destroy(gameObject, 3f);
+        }
+        else
+        {
+            Destroy(gameObject, 5f);
+        }
     }
 }

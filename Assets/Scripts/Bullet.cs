@@ -11,7 +11,7 @@ public class Bullet : MonoBehaviour
     public float knockbackForce = 5f;
 
     [Header("Homing Settings")]
-    public bool homingEnabled = true;       // Can be toggled dynamically
+    public bool homingEnabled = true;
     public float detectionRadius = 10f;
     public float rotationSpeed = 10f;
     public string enemyTag = "Enemy";
@@ -81,7 +81,6 @@ public class Bullet : MonoBehaviour
             {
                 if (isShockwave)
                 {
-                    // Shockwave pushes all enemies in radius
                     Collider[] hits = Physics.OverlapSphere(transform.position, 5f);
                     foreach (Collider hit in hits)
                     {

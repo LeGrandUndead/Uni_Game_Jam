@@ -15,10 +15,10 @@ public class Bullet_Damage : MonoBehaviour
 
             if (targetHealth.IsDead)
             {
-                Destroy(collision.gameObject); // Removes the enemy
+                Destroy(collision.gameObject);
             }
         }
 
-        Destroy(gameObject); // Destroy bullet on hit
+        Destroy(gameObject);
     }
 }

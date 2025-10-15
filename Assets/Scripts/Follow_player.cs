@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,10 +18,23 @@ public class Follow_player : MonoBehaviour
     private float yaw = 0f;
     private float pitch = 5f;
     private float cameraRadius = 0.3f;
+    private bool playerDead = false;
+    private Vector3 lastKnownPosition;
 
     void LateUpdate()
     {
-        if (player == null) return;
+        if (player == null)
+        {
+            if (!playerDead)
+            {
+                playerDead = true;
+            }
+
+            transform.LookAt(lastKnownPosition + Vector3.up * 0.8f);
+            return;
+        }
+
+        lastKnownPosition = player.position;
 
         yaw += Input.GetAxis("Mouse X") * rotationSpeed;
         pitch -= Input.GetAxis("Mouse Y") * rotationSpeed;
