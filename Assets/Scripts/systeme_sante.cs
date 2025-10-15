@@ -62,7 +62,18 @@ public class systeme_sante : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject, 5f);
+            Pursuit pursuit = GetComponent<Pursuit>();
+            if (pursuit != null)
+                pursuit.enabled = false;
+
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.constraints = RigidbodyConstraints.None;
+            }
+
+            Destroy(gameObject, 3f);
         }
     }
 }
