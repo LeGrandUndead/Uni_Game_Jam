@@ -26,7 +26,7 @@ public class PowerUpManager : MonoBehaviour
 
     void Start()
     {
-        specialPrefabs = new List<GameObject>() { riflePrefab, homingPrefab, spreadshotPrefab, shockwavePrefab, dashPrefab, speedBoostPrefab, turretPrefab };
+        specialPrefabs = new List<GameObject>() { riflePrefab, homingPrefab, spreadshotPrefab, shockwavePrefab, dashPrefab, speedBoostPrefab};
     }
 
     public void SpawnPowerUpsForWave(int currentWave, int totalEnemyTypes)
@@ -35,9 +35,15 @@ public class PowerUpManager : MonoBehaviour
         SpawnRandomSpecialAtGround();
 
         int healCount = Random.Range(healPerWave, maxHealPerWave + 1);
+        int turretCount = Random.Range(1, 2);
         for (int i = 0; i < healCount; i++)
         {
             SpawnHealInAir();
+        }
+
+        for (int i = 0; i < turretCount; i++)
+        {
+            SpawnTurretsInAir();
         }
     }
 
@@ -72,5 +78,16 @@ public class PowerUpManager : MonoBehaviour
         );
 
         Instantiate(healPrefab, pos, Quaternion.identity);
+    }
+
+    void SpawnTurretsInAir()
+    {
+        Vector3 pos = new Vector3(
+            Random.Range(mapMinBounds.x, mapMaxBounds.x),
+            Random.Range(-2f, -3f),
+            Random.Range(mapMinBounds.z, mapMaxBounds.z)
+        );
+
+        Instantiate(turretPrefab, pos, Quaternion.identity);
     }
 }

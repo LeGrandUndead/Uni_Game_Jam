@@ -26,18 +26,23 @@ public class Follow_player : MonoBehaviour
         if (player == null)
         {
             if (!playerDead)
-            {
                 playerDead = true;
-            }
-
             transform.LookAt(lastKnownPosition + Vector3.up * 0.8f);
             return;
         }
 
         lastKnownPosition = player.position;
 
-        yaw += Input.GetAxis("Mouse X") * rotationSpeed;
-        pitch -= Input.GetAxis("Mouse Y") * rotationSpeed;
+        float horizontalInput = Input.GetAxis("Mouse X");
+        float verticalInput = Input.GetAxis("Mouse Y");
+
+        if (Input.GetKey(KeyCode.LeftArrow)) horizontalInput = -1;
+        if (Input.GetKey(KeyCode.RightArrow)) horizontalInput = 1;
+        if (Input.GetKey(KeyCode.UpArrow)) verticalInput = -1;
+        if (Input.GetKey(KeyCode.DownArrow)) verticalInput = 1;
+
+        yaw += horizontalInput * rotationSpeed;
+        pitch -= verticalInput * rotationSpeed;
         pitch = Mathf.Clamp(pitch, -20f, 20f);
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
 
@@ -47,18 +52,14 @@ public class Follow_player : MonoBehaviour
             currentOffset += runOffset;
 
         Vector3 desiredPosition = player.position + rotation * currentOffset;
-
         Vector3 dir = desiredPosition - player.position;
         float dist = dir.magnitude;
         RaycastHit hit;
 
-        if (Physics.SphereCast(player.position, cameraRadius, dir.normalized, out hit, dist, collisionLayers))
-        {
-            desiredPosition = hit.point - dir.normalized * cameraRadius;
-        }
+        if (Physics.Raycast(player.position + Vector3.up * 1f, dir.normalized, out hit, dist, collisionLayers))
+            desiredPosition = hit.point - dir.normalized * 0.3f;
 
         transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
-
         transform.LookAt(player.position + Vector3.up * 0.8f);
 
         if (changeFOV && Camera.main != null && playerMovement != null)

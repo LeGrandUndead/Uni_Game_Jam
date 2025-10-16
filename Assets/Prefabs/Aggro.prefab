@@ -618,7 +618,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   damage: 5
   playerKnockbackForce: 20
-  enemyKnockbackForce: 3
+  enemyKnockbackForce: 10
 --- !u!114 &7470765261357664267
 MonoBehaviour:
   m_ObjectHideFlags: 0

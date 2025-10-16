@@ -12,10 +12,10 @@ public class Attac : MonoBehaviour
     public float fireRate = 0.15f;
 
     [Header("Powerup Toggles")]
-    public bool rifleMode = false;    
-    public bool homingMode = true; 
+    public bool rifleMode = false;
+    public bool homingMode = true;
     public bool spreadShot = false;
-    public bool shockwaveEnabled = false; 
+    public bool shockwaveEnabled = false;
 
     private bool isShooting = false;
     private bool canShoot = true;
@@ -30,12 +30,11 @@ public class Attac : MonoBehaviour
 
         if (rifleMode)
         {
-            if (Input.GetMouseButtonDown(0)) { 
+            if (Input.GetMouseButtonDown(0))
+            {
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.playerRifle);
                 StartCoroutine(ShootAuto());
             }
-
-
 
             if (Input.GetMouseButtonUp(0))
                 StopShooting();
@@ -109,5 +108,4 @@ public class Attac : MonoBehaviour
             Destroy(other.gameObject);
         }
     }
-
 }

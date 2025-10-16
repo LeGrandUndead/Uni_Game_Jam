@@ -600,7 +600,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawner: {fileID: 508846832}
   startingEnemies: 5
-  spawnInterval: 1.5
+  spawnInterval: 1
   timeBetweenWaves: 2
   difficultyMultiplier: 2
   powerUpManager: {fileID: 947295742}
@@ -1242,7 +1242,7 @@ MonoBehaviour:
   cameraTransform: {fileID: 963194228}
   isRunning: 0
   dashEnabled: 1
-  speedBoostEnabled: 0
+  speedBoostEnabled: 1
 --- !u!114 &334325649
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3114,8 +3114,8 @@ MonoBehaviour:
   turretPrefab: {fileID: 100012, guid: f832b09c86bd81e4f91beb978de1ae75, type: 3}
   mapMinBounds: {x: -40, y: 1.32, z: 40}
   mapMaxBounds: {x: 35, y: 1.33, z: -35}
-  healPerWave: 1
-  maxHealPerWave: 2
+  healPerWave: 3
+  maxHealPerWave: 4
 --- !u!4 &947295743
 Transform:
   m_ObjectHideFlags: 0
